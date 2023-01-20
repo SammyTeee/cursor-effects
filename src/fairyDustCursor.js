@@ -13,11 +13,32 @@ export function fairyDustCursor(options) {
   const lastPos = { x: width / 2, y: width / 2 };
   const particles = [];
   const canvImages = [];
-  let canvas, context;
+  let canvas, context, animationFrame;
 
   const char = "*";
 
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
+
+  // Re-initialise or destroy the cursor when the prefers-reduced-motion setting changes
+  prefersReducedMotion.onchange = () => {
+    if (prefersReducedMotion.matches) {
+      destroy();
+    } else {
+      init();
+    }
+  };
+
   function init() {
+    // Don't show the cursor trail if the user has prefers-reduced-motion enabled
+    if (prefersReducedMotion.matches) {
+      console.log(
+        "This browser has prefers reduced motion turned on, so the cursor did not init"
+      );
+      return false;
+    }
+
     canvas = document.createElement("canvas");
     context = canvas.getContext("2d");
     canvas.style.top = "0px";
@@ -151,8 +172,17 @@ export function fairyDustCursor(options) {
 
   function loop() {
     updateParticles();
-    requestAnimationFrame(loop);
+    animationFrame = requestAnimationFrame(loop);
   }
+
+  function destroy() {
+    canvas.remove();
+    cancelAnimationFrame(animationFrame);
+    element.removeEventListener("mousemove", onMouseMove);
+    element.removeEventListener("touchmove", onTouchMove);
+    element.removeEventListener("touchstart", onTouchMove);
+    window.addEventListener("resize", onWindowResize);
+  };
 
   function Particle(x, y, canvasItem) {
     const lifeSpan = Math.floor(Math.random() * 30 + 60);
@@ -185,4 +215,8 @@ export function fairyDustCursor(options) {
   }
 
   init();
+
+  return {
+    destroy: destroy
+  }
 }

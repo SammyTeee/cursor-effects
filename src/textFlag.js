@@ -1,22 +1,35 @@
-export function rainbowCursor(options) {
+// Text Flag
+// via http://www.javascript-fx.com/mouse_trail/index.html (200X)
+// via fun24.com (defunct, 199X)
+
+export function textFlag(options) {
+  let cursorOptions = options || {};
   let hasWrapperEl = options && options.element;
   let element = hasWrapperEl || document.body;
+
+  let text = cursorOptions.text ? " " + options.text : " Your Text Here";
+
+  let font = cursorOptions.font || "monospace";
+  let textSize = cursorOptions.textSize || 12;
+
+  let fontFamily = textSize + "px " + font;
+
+  let gap = cursorOptions.gap || textSize + 2;
+  let angle = 0;
+  let radiusX = 2;
+  let radiusY = 5;
+  let charArray = [];
 
   let width = window.innerWidth;
   let height = window.innerHeight;
   let cursor = { x: width / 2, y: width / 2 };
-  let particles = [];
+
+  for (let i = 0; i < text.length; i++) {
+    charArray[i] = { letter: text.charAt(i), x: width / 2, y: width / 2 };
+  }
+
   let canvas, context, animationFrame;
 
-  const totalParticles = options?.length || 20;
-  const colors = options?.colors || [
-    "#FE0000",
-    "#FD8C00",
-    "#FFE500",
-    "#119F0B",
-    "#0644B3",
-    "#C22EDC",
-  ];
   const size = options?.size || 3;
 
   let cursorsInitted = false;
@@ -93,61 +106,29 @@ export function rainbowCursor(options) {
       cursor.x = e.clientX;
       cursor.y = e.clientY;
     }
-
-    if (cursorsInitted === false) {
-      cursorsInitted = true;
-      for (let i = 0; i < totalParticles; i++) {
-        addParticle(cursor.x, cursor.y);
-      }
-    }
-  }
-
-  function addParticle(x, y, image) {
-    particles.push(new Particle(x, y, image));
   }
 
   function updateParticles() {
     context.clearRect(0, 0, width, height);
-    context.lineJoin = "round";
 
-    let particleSets = [];
+    angle += 0.15;
+    let locX = radiusX * Math.cos(angle);
+    let locY = radiusY * Math.sin(angle);
 
-    let x = cursor.x;
-    let y = cursor.y;
+    for (let i = charArray.length - 1; i > 0; i--) {
+      charArray[i].x = charArray[i - 1].x + gap;
+      charArray[i].y = charArray[i - 1].y;
 
-    particles.forEach(function (particle, index, particles) {
-      let nextParticle = particles[index + 1] || particles[0];
+      context.font = fontFamily;
+      context.fillText(charArray[i].letter, charArray[i].x, charArray[i].y);
+    }
 
-      particle.position.x = x;
-      particle.position.y = y;
-
-      particleSets.push({ x: x, y: y });
-
-      x += (nextParticle.position.x - particle.position.x) * 0.4;
-      y += (nextParticle.position.y - particle.position.y) * 0.4;
-    });
-
-    colors.forEach((color, index) => {
-      context.beginPath();
-      context.strokeStyle = color;
-
-      if (particleSets.length) {
-        context.moveTo(
-          particleSets[0].x,
-          particleSets[0].y + index * (size - 1)
-        );
-      }
-
-      particleSets.forEach((set, particleIndex) => {
-        if (particleIndex !== 0) {
-          context.lineTo(set.x, set.y + index * size);
-        }
-      });
-
-      context.lineWidth = size;
-      context.lineCap = "round";
-      context.stroke();
-    });
+    let x1 = charArray[0].x;
+    let y1 = charArray[0].y;
+    x1 += (cursor.x - x1) / 5 + locX + 2;
+    y1 += (cursor.y - y1) / 5 + locY;
+    charArray[0].x = x1;
+    charArray[0].y = y1;
   }
 
   function loop() {
@@ -160,15 +141,11 @@ export function rainbowCursor(options) {
     cancelAnimationFrame(animationFrame);
     element.removeEventListener("mousemove", onMouseMove);
     window.addEventListener("resize", onWindowResize);
-  };
-
-  function Particle(x, y) {
-    this.position = { x: x, y: y };
   }
 
   init();
 
   return {
-    destroy: destroy
-  }
+    destroy: destroy,
+  };
 }
